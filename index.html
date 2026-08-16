@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Game Presence Tracker</title>
+    <title>PlayStatus - Roblox × Discord</title>
     <style>
         * {
             margin: 0;
@@ -16,6 +16,7 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: #333;
             line-height: 1.6;
+            min-height: 100vh;
         }
 
         header {
@@ -24,16 +25,35 @@
             padding: 20px 0;
             text-align: center;
             border-bottom: 3px solid #667eea;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 40px;
         }
 
         header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
+            font-size: 2em;
         }
 
-        header p {
-            font-size: 1.1em;
-            opacity: 0.9;
+        .auth-status {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-info {
+            text-align: right;
+            font-size: 0.9em;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #667eea;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .container {
@@ -104,6 +124,32 @@
             transform: translateY(-3px);
         }
 
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+            transform: translateY(-3px);
+        }
+
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #229954;
+            transform: translateY(-3px);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
         .features {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -127,6 +173,84 @@
 
         .feature-card p {
             color: #666;
+        }
+
+        .control-panel {
+            background: white;
+            border-radius: 10px;
+            padding: 40px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            margin-bottom: 40px;
+            display: none;
+        }
+
+        .control-panel.active {
+            display: block;
+        }
+
+        .control-panel h2 {
+            color: #667eea;
+            margin-bottom: 25px;
+            font-size: 1.8em;
+        }
+
+        .control-section {
+            margin-bottom: 30px;
+            padding-bottom: 30px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .control-section:last-child {
+            border-bottom: none;
+        }
+
+        .control-section h3 {
+            color: #764ba2;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .status-box {
+            background: #f4f4f4;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+
+        .status-box.sync-active {
+            border-left-color: #27ae60;
+        }
+
+        .status-box.sync-inactive {
+            border-left-color: #e74c3c;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+            margin-bottom: 2px;
+        }
+
+        .status-indicator.active {
+            background: #27ae60;
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.inactive {
+            background: #e74c3c;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
         }
 
         .guide-section {
@@ -173,6 +297,19 @@
             font-family: 'Courier New', monospace;
         }
 
+        .close-btn {
+            float: right;
+            font-size: 1.5em;
+            cursor: pointer;
+            color: #999;
+            background: none;
+            border: none;
+        }
+
+        .close-btn:hover {
+            color: #333;
+        }
+
         footer {
             background: rgba(0, 0, 0, 0.7);
             color: white;
@@ -190,29 +327,90 @@
             text-decoration: underline;
         }
 
-        .close-btn {
-            float: right;
-            font-size: 1.5em;
-            cursor: pointer;
-            color: #999;
-            background: none;
-            border: none;
-        }
-
-        .close-btn:hover {
-            color: #333;
-        }
-
         .emoji {
             font-size: 1.2em;
             margin-right: 5px;
+        }
+
+        .login-prompt {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            color: white;
+            text-align: center;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            max-width: 400px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-content h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .modal-content p {
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            header h1 {
+                font-size: 1.5em;
+            }
+
+            .hero {
+                padding: 40px 20px;
+            }
+
+            .hero h2 {
+                font-size: 1.5em;
+            }
+
+            .button-container {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
         }
     </style>
 </head>
 <body>
     <header>
-        <h1>🎮 Game Presence Tracker</h1>
-        <p>Robloxで遊んでいるゲーム情報をDiscordに表示</p>
+        <h1>🎮 PlayStatus</h1>
+        <div class="auth-status" id="authStatus">
+            <button class="btn btn-primary" onclick="discordLogin()">🔗 Discord ログイン</button>
+        </div>
     </header>
 
     <div class="container">
@@ -232,7 +430,7 @@
             </div>
             <div class="feature-card">
                 <h3><span class="emoji">💬</span>Rich Presence</h3>
-                <p>オシャレなDiscordプレゼンスで、何をプレイしているかを友達に表示できます。</p>
+                <p>オシャレなDiscordプレゼンスで、何をプレイしてい��かを友達に表示できます。</p>
             </div>
             <div class="feature-card">
                 <h3><span class="emoji">⚡</span>シンプル</h3>
@@ -240,8 +438,41 @@
             </div>
         </div>
 
+        <!-- コントロールパネル -->
+        <div class="control-panel" id="controlPanel">
+            <button class="close-btn" onclick="hideControlPanel()">✕</button>
+            <h2>🎛️ コントロールパネル</h2>
+
+            <div class="control-section">
+                <h3>👤 ユーザー情報</h3>
+                <div class="status-box">
+                    <p><strong>ユーザー名:</strong> <span id="userName">読み込み中...</span></p>
+                    <p><strong>ユーザーID:</strong> <span id="userId">読み込み中...</span></p>
+                </div>
+                <button class="btn btn-danger" onclick="discordLogout()">🚪 ログアウト</button>
+            </div>
+
+            <div class="control-section">
+                <h3>🎮 同期ステータス</h3>
+                <div class="status-box" id="syncStatusBox">
+                    <p><span class="status-indicator active" id="syncIndicator"></span>
+                    <strong>ステータス:</strong> <span id="syncStatus">同期中</span></p>
+                </div>
+                <button class="btn btn-danger" id="syncToggleBtn" onclick="toggleSync()">🛑 同期停止</button>
+            </div>
+
+            <div class="control-section">
+                <h3>📊 ゲーム情報</h3>
+                <div class="status-box">
+                    <p><strong>現在のゲーム:</strong> <span id="currentGame">取得中...</span></p>
+                    <p><strong>最終更新:</strong> <span id="lastUpdate">未更新</span></p>
+                </div>
+                <button class="btn btn-primary" onclick="refreshGameInfo()">🔄 手動更新</button>
+            </div>
+        </div>
+
         <!-- ガイドセクション -->
-        <div class="guide-section active" id="guideSection">
+        <div class="guide-section" id="guideSection">
             <button class="close-btn" onclick="hideGuide()">✕</button>
             <h2>📖 セットアップガイド</h2>
 
@@ -310,22 +541,190 @@ https://www.roblox.com/users/123456789/profile → 123456789
         </div>
     </div>
 
+    <!-- ログインモーダル -->
+    <div class="modal" id="loginModal">
+        <div class="modal-content">
+            <h2>🔗 Discord ログイン</h2>
+            <p>Discord アカウントでログインして、PlayStatus を使用してください。</p>
+            <button class="btn btn-primary" onclick="authorizeDiscord()">Discord で認証</button>
+            <button class="btn btn-secondary" onclick="closeModal()">キャンセル</button>
+        </div>
+    </div>
+
     <footer>
         <p>📍 <a href="https://github.com/yoi372323-design/game-presence-tracker">GitHub Repository</a></p>
-        <p>作成者: yoi372323-design | ライセンス: MIT</p>
+        <p>作成者: yoi372323-design | ライセンス: MIT | ボット: PlayStatus</p>
     </footer>
 
     <script>
-        function showGuide() {
-            const guideSection = document.getElementById('guideSection');
-            guideSection.classList.add('active');
-            guideSection.scrollIntoView({ behavior: 'smooth' });
+        const CLIENT_ID = '1538449455819530280';
+        const REDIRECT_URI = window.location.origin + '/callback';
+        
+        // ローカルストレージからトークン取得
+        function getAccessToken() {
+            return localStorage.getItem('discord_token');
         }
 
-        function hideGuide() {
-            const guideSection = document.getElementById('guideSection');
-            guideSection.classList.remove('active');
+        // ローカルストレージにトークン保存
+        function saveAccessToken(token) {
+            localStorage.setItem('discord_token', token);
         }
+
+        // ログイン状態をチェック
+        function checkLoginStatus() {
+            const token = getAccessToken();
+            if (token) {
+                showLoggedInUI(token);
+                loadUserInfo(token);
+            } else {
+                showLoggedOutUI();
+            }
+        }
+
+        // ログイン済みUIを表示
+        function showLoggedInUI(token) {
+            const authStatus = document.getElementById('authStatus');
+            authStatus.innerHTML = `
+                <div class="user-info" id="userInfo">
+                    <p>読み込み中...</p>
+                </div>
+                <div class="user-avatar" id="userAvatar">👤</div>
+            `;
+            document.getElementById('controlPanel').classList.add('active');
+        }
+
+        // ログアウトUIを表示
+        function showLoggedOutUI() {
+            const authStatus = document.getElementById('authStatus');
+            authStatus.innerHTML = `
+                <button class="btn btn-primary" onclick="discordLogin()">🔗 Discord ログイン</button>
+            `;
+            document.getElementById('controlPanel').classList.remove('active');
+        }
+
+        // ユーザー情報を取得
+        function loadUserInfo(token) {
+            fetch('https://discordapp.com/api/users/@me', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.id) {
+                    document.getElementById('userName').textContent = data.username;
+                    document.getElementById('userId').textContent = data.id;
+                    document.getElementById('userInfo').innerHTML = `
+                        <p>${data.username}#${data.discriminator}</p>
+                        <p style="font-size: 0.8em; opacity: 0.8;">ログイン中</p>
+                    `;
+                    if (data.avatar) {
+                        const avatarUrl = `https://cdn.discordapp.com/avatars/${data.id}/${data.avatar}.png`;
+                        document.getElementById('userAvatar').innerHTML = `<img src="${avatarUrl}" style="width:100%; height:100%; border-radius:50%;">`;
+                    }
+                } else {
+                    discordLogout();
+                }
+            })
+            .catch(err => {
+                console.error('Error loading user info:', err);
+                discordLogout();
+            });
+        }
+
+        // Discord ログイン
+        function discordLogin() {
+            document.getElementById('loginModal').classList.add('active');
+        }
+
+        // Discord 認証
+        function authorizeDiscord() {
+            const authUrl = `https://discord.com/api/oauth2/authorize?client_id=${CLIENT_ID}&response_type=token&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=identify`;
+            window.location.href = authUrl;
+        }
+
+        // モーダルを閉じる
+        function closeModal() {
+            document.getElementById('loginModal').classList.remove('active');
+        }
+
+        // Discord ログアウト
+        function discordLogout() {
+            localStorage.removeItem('discord_token');
+            showLoggedOutUI();
+            alert('ログアウトしました');
+        }
+
+        // 同期を切り替え
+        function toggleSync() {
+            const syncStatusBox = document.getElementById('syncStatusBox');
+            const syncStatus = document.getElementById('syncStatus');
+            const syncIndicator = document.getElementById('syncIndicator');
+            const syncToggleBtn = document.getElementById('syncToggleBtn');
+            
+            if (syncStatus.textContent === '同期中') {
+                syncStatus.textContent = '同期停止中';
+                syncStatusBox.classList.remove('sync-active');
+                syncStatusBox.classList.add('sync-inactive');
+                syncIndicator.classList.remove('active');
+                syncIndicator.classList.add('inactive');
+                syncToggleBtn.textContent = '▶️ 同期再開';
+                syncToggleBtn.classList.remove('btn-danger');
+                syncToggleBtn.classList.add('btn-success');
+            } else {
+                syncStatus.textContent = '同期中';
+                syncStatusBox.classList.add('sync-active');
+                syncStatusBox.classList.remove('sync-inactive');
+                syncIndicator.classList.add('active');
+                syncIndicator.classList.remove('inactive');
+                syncToggleBtn.textContent = '🛑 同期停止';
+                syncToggleBtn.classList.remove('btn-success');
+                syncToggleBtn.classList.add('btn-danger');
+            }
+        }
+
+        // ゲーム情報を更新
+        function refreshGameInfo() {
+            const lastUpdate = document.getElementById('lastUpdate');
+            const now = new Date();
+            lastUpdate.textContent = now.toLocaleTimeString('ja-JP');
+            alert('ゲーム情報を更新しました！');
+        }
+
+        // ガイドを表示
+        function showGuide() {
+            document.getElementById('guideSection').classList.add('active');
+            document.getElementById('guideSection').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // ガイドを非表示
+        function hideGuide() {
+            document.getElementById('guideSection').classList.remove('active');
+        }
+
+        // コントロールパネルを非表示
+        function hideControlPanel() {
+            document.getElementById('controlPanel').classList.remove('active');
+        }
+
+        // URLからアクセストークンを抽出
+        function extractTokenFromUrl() {
+            const hash = window.location.hash.substring(1);
+            const params = new URLSearchParams(hash);
+            const token = params.get('access_token');
+            
+            if (token) {
+                saveAccessToken(token);
+                window.location.hash = '';
+                checkLoginStatus();
+            }
+        }
+
+        // 初期化
+        window.addEventListener('DOMContentLoaded', () => {
+            extractTokenFromUrl();
+            checkLoginStatus();
+        });
     </script>
 </body>
 </html>
